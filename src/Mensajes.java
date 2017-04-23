@@ -24,6 +24,7 @@ public class Mensajes {
     public static String mGanadorRonda = "gan";
     public static String mNextRonda= "next";
     public static String mFin= "fin";
+    public static String mRevelar= "rev";
     
     public Mensajes(){
         mensaje = "";
@@ -61,9 +62,9 @@ public class Mensajes {
         return mensaje;
     }
     
-    //n es el numero de chinos elegidos
-    public String mensajeChinos(int n){
-        mensaje = mChinos+" "+n+" "+"\n";
+    //hash es un resumen que se manda del numero de chinos
+    public String mensajeChinos(String hash){
+        mensaje = mChinos+" "+hash+" "+"\n";
         return mensaje;
     }
     
@@ -92,6 +93,13 @@ public class Mensajes {
     //rondasCliente es las rondsa ganadas por el cliente
     public String mensajeFin (int rondasServidor, int rondasCliente){
         mensaje = mFin+" "+rondasServidor+" "+rondasCliente+" "+"\n";
+        return mensaje;
+    }
+    
+    //n es el numero de chinos
+    //aleatorio es el numero aleatorio usado para generar el hash
+    public String mensajeRevelar(int n, int aleatorio){
+        mensaje = mRevelar+" "+n+" "+aleatorio+" "+"\n";
         return mensaje;
     }
 }

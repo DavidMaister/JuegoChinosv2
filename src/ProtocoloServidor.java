@@ -42,7 +42,8 @@ public class ProtocoloServidor extends Thread{
     private final int esperandoApuesta = 5;
     private final int ganador = 6;
     private final int finRonda = 7;
-    
+    private final int revelar = 8;
+
           
      /* Constructor de esta clase servidor. 
      * 
@@ -81,7 +82,10 @@ public class ProtocoloServidor extends Thread{
         Usuario u = null;
         int nRondas = 3; //tres rondas por defecto
         int chinosCliente = 0;
+        String chinosClienteCifrado = null;
         int chinos = 0;
+        String chinosCifrado = null;  
+        int aleatorio = 0;  //numero aleatorio para generar el hash con el
         int apuesta = 0;
         int apuestaCliente = 0;
         int rondaActual = 1;
@@ -90,6 +94,7 @@ public class ProtocoloServidor extends Thread{
         int ganadorRonda = -1;  //inicializamos
         
         Random rand = new Random(); //para generar numeros aleatorios
+       
         try {
             
             // Esperamos una conexión:
@@ -173,13 +178,22 @@ public class ProtocoloServidor extends Thread{
 
                         if(campos[0].compareTo(Mensajes.mChinos) == 0){
                             //System.out.println("Esperando chinos:  "+campos[0]+" "+campos[1]);
-                            chinosCliente = Integer.parseInt(campos[1]);
-                            System.out.println("El cliente escoge "+chinosCliente+" chinos.");
+                            chinosClienteCifrado = campos[1];
+                            System.out.println("El cliente envia "+chinosClienteCifrado);
                             
                             
                             //el servidor elige su numero de chinos aleatoriamente
                             chinos = rand.nextInt(3);
                             System.out.println("El servidor coge "+chinos+" chinos");
+                            
+                            //generamos el resumen hash de nuestros chinos
+                            aleatorio = rand.nextInt(1023);
+                            int aux = aleatorio + chinos;
+                            chinosCifrado = Resumen.byteToString(Resumen.generar(""+aux));
+                            System.out.println("Hash: "+ chinosCifrado);
+                            mensaje = fabricaMensajes.mensajeChinos(chinosCifrado);
+                            enviarMensaje(mensaje, out);
+                            
                             estado = esperandoApuesta;
                         }
                     break;
@@ -193,10 +207,34 @@ public class ProtocoloServidor extends Thread{
                             //generamos la apuesta del servidor
                             apuesta = rand.nextInt(3) + chinos;
                             System.out.println("El servidor apuesta por "+apuesta+" chinos");
-                            estado = ganador;
+                            //y la enviamos
+                            mensaje = fabricaMensajes.mensajeApuesta(apuesta);
+                            enviarMensaje(mensaje, out);
+                            estado = revelar;
                         }
                     break;
                     
+                    //revelamos cual es el numero de chinos
+                    case revelar:
+                        campos = leerPeticion(in);
+                        if(campos[0].compareTo(Mensajes.mRevelar) == 0){
+                            chinosCliente = Integer.parseInt(campos[1]);    //guardamos los chinos del cliente
+                            
+                            //comprobamos que el cliente dice la verdad
+                            int aux = chinosCliente + Integer.parseInt(campos[2]);
+                            if(Resumen.byteToString(Resumen.generar(""+aux)).compareTo(chinosClienteCifrado) == 0){
+                                System.out.println("Hash comprobado correctamente");
+                                estado = ganador;
+                            }
+                            else{
+                                System.out.println("Hash erroneo");
+                                //Si el hash es incorrecto se acaba la apartida
+                                mensaje = fabricaMensajes.mensajeFin(0, 0);
+                                enviarMensaje(mensaje, out);
+                                salir = true;
+                            }
+                        }
+                    break;
                     //donde se decide el ganador de la ronda
                     case ganador:
                         

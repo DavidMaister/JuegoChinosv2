@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Arrays;
+import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -31,9 +33,17 @@ public class ProtocoloCliente {
     private final int ganador = 7;
     private final int finRonda = 8;
     private final int comprobarLogin = 9;
+    private final int recibirChinos = 10;
+    private final int recibirApuesta = 11;
+    private final int revelar = 12;
     private int nRondas;
     private int chinos;
+    private String chinosCifrado;
+    private int chinosServidor;
+    private String chinosServidorCifrado;
     private int apuesta;
+    private int apuestaServidor;
+    private int aleatorio;
     /**
      * Constructor del cliente.
      * @param direccionServidor Dirección o nombre del servidor.
@@ -41,6 +51,7 @@ public class ProtocoloCliente {
      */
     public ProtocoloCliente(String direccionServidor, int puerto) {
         Socket socketConexion;
+        Random rand = new Random(); //para generar numeros aleatorios
         int estado = introducirAlias;
         boolean salir = false;
         
@@ -139,22 +150,55 @@ public class ProtocoloCliente {
                         case mandarChinos:
                             System.out.println("Elige numero de chinos: ");
                             chinos = Integer.parseInt(inConsola.readLine());
-                            mensaje = mensajeaEnviar.mensajeChinos(chinos);
+                            
+                            //generamos el resumen hash de nuestros chinos
+                            aleatorio = rand.nextInt(1023);
+                            int aux = aleatorio + chinos;
+                            chinosCifrado = Resumen.byteToString(Resumen.generar(""+aux));
+                            System.out.println("Hash: "+ chinosCifrado);
+                            //enviamos el mensaje con nuestros chinos
+                            mensaje = mensajeaEnviar.mensajeChinos(chinosCifrado);
                             enviarMensaje(mensaje, out);
-                            estado = mandarApuesta;
+                            estado = recibirChinos;
                         break;
                         
+                        //recibimos los chinos del servidor
+                        case recibirChinos:
+                            campos = leerPeticion(in);
+                            if(campos[0].compareTo(Mensajes.mChinos) == 0){
+                                chinosServidorCifrado = campos[1];
+                                System.out.println("Recibidos chinos del servidor");
+                                estado = mandarApuesta;
+                            }
+                            
+                        break;
                         //elegimos que apuesta se hace 
                         case mandarApuesta:
                             System.out.println("Elige tu apuesta sabiamente: ");
                             apuesta = Integer.parseInt(inConsola.readLine());
                             mensaje = mensajeaEnviar.mensajeApuesta(apuesta);
                             enviarMensaje(mensaje, out);
+                            estado = recibirApuesta;
+                        break;
+                        
+                        //recibimos la apuesta del servidor
+                        case recibirApuesta:
+                            campos = leerPeticion(in);
+                            if(campos[0].compareTo(Mensajes.mApuesta) == 0){
+                                apuestaServidor = Integer.parseInt(campos[1]);
+                                System.out.println("Recibida apuesta del servidor");
+                                estado = revelar;
+                            }
+                        break;
+                        
+                        //revelamos cual es el numero de chinos al servidor
+                        case revelar:
+                            mensaje = mensajeaEnviar.mensajeRevelar(chinos, aleatorio);
+                            enviarMensaje(mensaje, out);
                             estado = ganador;
                         break;
                         
                         //estado donde se nos manda quien ha sido el ganador de la ronda
-                        // 
                         case ganador:
                             //leemos el resultado
                             campos = leerPeticion(in);
@@ -176,6 +220,10 @@ public class ProtocoloCliente {
                                     System.out.println("Sigue así, has ganado esta ronda!!");
                                 }
                                 estado = finRonda;
+                            }
+                            if(campos[0].compareTo(Mensajes.mFin) == 0){
+                                System.out.println("Te han pillado haciendo trampas");
+                                salir = true;
                             }
                         break;
                         
