@@ -30,6 +30,7 @@ public class ProtocoloCliente {
     private final int mandarApuesta = 6;
     private final int ganador = 7;
     private final int finRonda = 8;
+    private final int comprobarLogin = 9;
     private int nRondas;
     private int chinos;
     private int apuesta;
@@ -75,7 +76,12 @@ public class ProtocoloCliente {
                             //Creamos el mensaje y lo enviamos
                             mensaje = mensajeaEnviar.mensajeLogin(alias);
                             enviarMensaje(mensaje, out);
-
+                            estado = comprobarLogin;
+                            
+                        break;
+                        
+                        //se comprueba si el login es correcto o no
+                        case comprobarLogin:
                             campos = leerPeticion(in);
 
                             //comprobamos si el login es correcto y pasamos al siguiente estado
@@ -83,7 +89,12 @@ public class ProtocoloCliente {
                                 System.out.println("Login correcto. ");
                                 estado = autenticado;
                             }
+                            if(campos[0].compareTo(Mensajes.mLoginError) == 0){
+                                System.out.println("Login incorrecto. Vuelve a intentarlo ");
+                                estado = introducirAlias;
+                            }
                         break;
+                        
 
                         //se decide si se juega contra maquina o no, pero solo implementaremos que juega contra la maquian
                         //asi que no se toma ninguna decision aqui

@@ -15,9 +15,11 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Map;
 
 
 /**
@@ -26,10 +28,13 @@ import java.util.logging.Logger;
  */
 public class ProtocoloServidor extends Thread{
     
+    
+    private static Map usuarios;    //base de datos de los usuarios
     private static ServerSocket socketEscucha;
-    //variables necesarias para el algortimo
-    //los distintos estados
     private final int puerto;
+    
+    //variables necesarias para el algortimo de
+    //los distintos estados
     private final int esperandoAlias = 1;
     private final int autenticado = 2;
     private final int negRondas = 3;
@@ -37,48 +42,56 @@ public class ProtocoloServidor extends Thread{
     private final int esperandoApuesta = 5;
     private final int ganador = 6;
     private final int finRonda = 7;
-    private int nRondas;
-    private int chinosCliente;
-    private int chinos;
-    private int apuesta;
-    private int apuestaCliente;
-    private int rondaActual = 1;
-    private int rondasGanadasCliente = 0;
-    private int rondasGanadasServidor = 0;
-    private int ganadorRonda;
+    
           
-     /* Constructor de esta clase servidor. Se crea el socket para escuchar las peticiones
-     * @param puerto 
+     /* Constructor de esta clase servidor. 
+     * 
      */
     public ProtocoloServidor(int puertoPeticiones){
         puerto = puertoPeticiones;
         
     }
     
+    /**
+     * Clase estatica para iniciar el servicio. Se inicia el socket de escucha
+     * @param puerto 
+     */
     public static void iniciar(int puerto){
         try {
             socketEscucha = new ServerSocket(puerto);
+            usuarios = new HashMap();
         } catch (IOException ex) {
             Logger.getLogger(ProtocoloServidor.class.getName()).log(Level.SEVERE, null, ex);
             System.out.println("Error creando socket de escucha");
         }
     }
-        
+     
+    /**
+     * Se ejecuta el juego de los chinos
+     */
     @Override
     public void run(){
         
         super.run();
-        boolean salir = false;
+        
         //ServerSocket socketEscucha;
         int estado = esperandoAlias; //estado inicial
         
+        //declaramos las variables
+        Usuario u = null;
+        int nRondas = 3; //tres rondas por defecto
+        int chinosCliente = 0;
+        int chinos = 0;
+        int apuesta = 0;
+        int apuestaCliente = 0;
+        int rondaActual = 1;
+        int rondasGanadasCliente = 0;
+        int rondasGanadasServidor = 0;
+        int ganadorRonda = -1;  //inicializamos
+        
         Random rand = new Random(); //para generar numeros aleatorios
-        System.out.println("empieza logica del programa");
         try {
             
-            //socketEscucha=new ServerSocket(puerto);
-
-                
             // Esperamos una conexión:
             Socket socketConexion=socketEscucha.accept();
                 
@@ -86,14 +99,15 @@ public class ProtocoloServidor extends Thread{
             PrintWriter out= new PrintWriter(socketConexion.getOutputStream());
             BufferedReader in = new BufferedReader(new InputStreamReader(socketConexion.getInputStream()));
                 
-            System.out.println("...Sirviendo juego de los chinos...");
+            System.out.println("JUEGO DE LOS CHINOS");
             //Inicializamos variables para poder enviar y recibir mensajes
             Mensajes fabricaMensajes = new Mensajes();  //clase donde estan los formatos de los mensajes
-            String[] campos;      //mensaje que se recibe desde el cliente
-            String mensaje;      //mensaje que se manda al cliente
+            String[] campos;      //String que se recibe desde el cliente
+            String mensaje;      //String que se manda al cliente
                 
                 
             //bucle donde se ejecuta la logica del algoritmo, de la maquina de estados
+            boolean salir = false;  //variable para determinar cuando salir del programa
             while(!salir){    
                 switch(estado){
                     //estado que se encarga del login
@@ -104,11 +118,27 @@ public class ProtocoloServidor extends Thread{
                         if(campos[0].compareTo(Mensajes.mLogin) == 0){
                         String alias = campos[1];
                         
-                        //creamos el mensaje y lo enviamos
-                        mensaje = fabricaMensajes.mensajeLoginOk();
-                        enviarMensaje(mensaje, out);
-                        System.out.println("Usuario registrado con exito como: " +alias);
-                        estado = autenticado;
+                        //comprobamos si esta en la base de datos, si no lo añadimos
+                        u=(Usuario)usuarios.get(alias);
+                        
+                        //si no se encuentra el usuario en la base de datos, login correcto
+                        if(u == null){
+                            u = new Usuario(alias);
+                            usuarios.put(u.usuario,u);
+                            //System.out.println("Usuario dado de alta "+usuarios.get(alias));
+                        
+                            //creamos el mensaje de Ok y lo enviamos
+                            mensaje = fabricaMensajes.mensajeLoginOk();
+                            enviarMensaje(mensaje, out);
+                            System.out.println("Usuario autenticado con exito como: " +alias);
+                            estado = autenticado;   //pasamos al siguiente estado
+                            }
+                        else{
+                            //si ya existe en la base de datos mandamos error
+                            System.out.println("Intendo de login fallido");
+                            mensaje = fabricaMensajes.mensajeLoginError();
+                            enviarMensaje(mensaje,out);
+                        }
                         }
                     break;
                     

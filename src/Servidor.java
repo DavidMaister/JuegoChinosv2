@@ -20,7 +20,6 @@ public class Servidor {
         int nHebras =3; //10 hebras por defecto
         
         // Por si quisiéramos pasarle argumentos por la línea de comandos:
-        System.out.println("Servidor para juego de los chinos a su servicio");
         if(args.length>0){
             puerto=Integer.parseInt(args[0]);
         }
@@ -29,9 +28,8 @@ public class Servidor {
         // Creamos las 50 hebras:
         for(int i=0;i<nHebras;i++){
             // Creamos una nueva instancia de hebra:
-            System.out.println("Creando hebra");
             ProtocoloServidor protocolo = new ProtocoloServidor(puerto);
-            System.out.println("Iniciamos hebra");
+            //System.out.println("Iniciamos hebra");
             // Para inicializarla, llamamos a .start():
             protocolo.start();
         }

@@ -36,7 +36,12 @@ public class Mensajes {
     }
     
     public String mensajeLoginOk(){
-        mensaje = mLoginOk+" "+"LoginOk"+"\n";
+        mensaje = mLoginOk+" "+"LoginOk"+" "+"\n";
+        return mensaje;
+    }
+    
+    public String mensajeLoginError(){
+        mensaje = mLoginError+" "+"\n";
         return mensaje;
     }
     
