@@ -15,6 +15,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.logging.Level;
@@ -120,6 +121,14 @@ public class ProtocoloServidor extends Thread{
                         
                         //leemos la peticion
                         campos = leerPeticion(in);
+                        //System.out.println("Base64 recibido: "+campos[0]);
+                        //decodificamos el mensaje en base64
+                        byte [] decoded = Base64.getDecoder().decode(campos[0]);
+                        String s = new String(decoded);
+                        //System.out.println("Decodificado: "+s);
+                            
+                        campos = s.split(" ");
+                            
                         if(campos[0].compareTo(Mensajes.mLogin) == 0){
                         String alias = campos[1];
                         

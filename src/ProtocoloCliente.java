@@ -5,6 +5,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -86,6 +87,13 @@ public class ProtocoloCliente {
                             
                             //Creamos el mensaje y lo enviamos
                             mensaje = mensajeaEnviar.mensajeLogin(alias);
+                            //System.out.println("Original: "+mensaje);
+                            
+                            //convertimos el mensaje a base 64
+                            mensaje = Base64.getEncoder().encodeToString(mensaje.getBytes());
+                            //System.out.println("Codificado: "+mensaje);
+                            
+                            //enviamos el mensaje codificado en base 64
                             enviarMensaje(mensaje, out);
                             estado = comprobarLogin;
                             
